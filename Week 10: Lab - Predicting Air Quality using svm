@@ -1,0 +1,208 @@
+library(kernlab)
+library(data.table)
+library(Metrics)
+library(ggplot2)
+library(e1071)
+library(gridExtra)
+library(caret)
+library(scales)
+
+# Step 1: Load the data 
+df <- airquality
+head(df)
+colSums(is.na(df))
+df$Ozone[is.na(df$Ozone)] <- round(median(df$Ozone, na.rm = T))
+df$Solar.R[is.na(df$Solar.R)] <- round(median(df$Solar.R, na.rm = T))
+head(df)
+dim(df)
+
+# Step 2: Create train and test data sets 
+set.seed(11)
+randIndex <- sample(1:dim(df)[1])
+summary(randIndex)
+length(randIndex)
+head(randIndex)
+cutpoint2_3 <- floor(2 * dim(df)[1] / 3)
+cutpoint2_3
+trainData <- df[randIndex[1:cutpoint2_3],]
+head(trainData)
+testData <- df[randIndex[(cutpoint2_3 + 1):dim(df)[1]],]
+head(testData)
+str(testData)
+
+# Step 3: Build a model using "numeric" outcome variable and visualize the results 
+## Step 3.1 - Build a model using ksvm
+ksvm <- ksvm(Ozone~., data = trainData, kernel = "rbfdot", kpar = "automatic", C = 5, cross = 10, prob.model = T)
+ksvm
+ksvmPred <- predict(ksvm, testData, type = "votes")
+head(ksvmPred)
+ksvmPred <- round(ksvmPred)
+ksvmModel <- data.table(testData, ksvmPred)
+colnames(ksvmModel)[7] <- "ksvmPredicted.Ozone"
+head(ksvmModel)
+
+## Step 3.2 - Test the model and find the RMSE
+ksvmRMSE <- rmse(ksvmModel$Ozone, ksvmModel$ksvmPredicted.Ozone)
+ksvmRMSE
+
+## Step 3.3 - Plot the results. 
+ksvmPlot <- ggplot(ksvmModel, aes(Temp, Wind)) + geom_point(aes(size = ksvmModel$Ozone - ksvmModel$ksvmPredicted.Ozone, color = ksvmModel$Ozone - ksvmModel$ksvmPredicted.Ozone)) + scale_color_gradient(low = "yellow", high = "red")
+ksvmPlot <- ksvmPlot + labs(title = "KSVM", color = "error", size = "error")
+ksvmPlot
+
+## Step 3.4 - Compute models and plot the results for `svm()` and `lm()`
+### Step 3.4.1 - Compute model for `svm()`
+svm <- svm(Ozone~., trainData)
+svm
+svmPred <- predict(svm, testData, type = "votes")
+head(svmPred)
+svmPred <- round(svmPred)
+svmModel <- data.table(testData, svmPred)
+colnames(svmModel)[7] <- "svmPredicted.Ozone"
+head(svmModel)
+
+svmRMSE <- rmse(svmModel$Ozone, svmModel$svmPredicted.Ozone)
+svmRMSE
+
+svmPlot <- ggplot(svmModel, aes(Temp, Wind)) + geom_point(aes(size = svmModel$Ozone - svmModel$svmPredicted.Ozone, color = svmModel$Ozone - svmModel$svmPredicted.Ozone)) + scale_color_gradient(low = "yellow", high = "red")
+svmPlot <- svmPlot + labs(title = "SVM", color = "error", size = "error")
+svmPlot
+
+### Step 3.4.2 - Compute model for `lm()`
+lm <- lm(Ozone~., trainData)
+lm
+lmPred <- predict(lm, testData)
+head(lmPred)
+lmPred <- round(lmPred)
+lmModel <- data.table(testData, lmPred)
+colnames(lmModel)[7] <- "lmPredicted.Ozone"
+head(lmModel)
+
+lmRMSE <- rmse(lmModel$Ozone, lmModel$lmPredicted.Ozone)
+lmRMSE
+
+lmPlot <- ggplot(lmModel, aes(Temp, Wind)) + geom_point(aes(size = lmModel$Ozone - lmModel$lmPredicted.Ozone, color = lmModel$Ozone - lmModel$lmPredicted.Ozone)) + scale_color_gradient(low = "yellow", high = "red")
+lmPlot <- lmPlot + labs(title = "LM", color = "error", size = "error")
+lmPlot
+
+## Step 3.5 - Print and plot all three model results together
+print(c(ksvmRMSE, svmRMSE, lmRMSE))
+
+grid.arrange(ksvmPlot, svmPlot, lmPlot, ncol = 3)
+
+# Step 4: Build a model using "categorical" outcome variable and visualize the results--Variable Preparation  
+goodOzone <- ifelse(df$Ozone >= mean(df$Ozone), 0, 1)
+df1 <- df
+df1$Ozone <- goodOzone
+mean(df$Ozone)
+head(df$Ozone)
+head(df1)
+dim(df1)
+
+# Step 5: Build a model using "categorical" outcome variable and visualize the results--Predict "good" and "bad" ozone days. 
+## Step 5.1 - Build a model 
+set.seed(11)
+randIndex2 <- sample(1:dim(df1)[1])
+summary(randIndex2)
+length(randIndex2)
+head(randIndex2)
+cutpoint2_3_2 <- floor(2 * dim(df1)[1] / 3)
+cutpoint2_3_2
+trainData2 <- df1[randIndex2[1:cutpoint2_3_2],]
+head(trainData2)
+testData2 <- df1[randIndex2[(cutpoint2_3_2 + 1):dim(df1)[1]],]
+head(testData2)
+
+ksvm2 <- ksvm(Ozone~., trainData2)
+ksvm2
+ksvm2Pred <- predict(ksvm2, testData2, type = "votes")
+head(ksvm2Pred)
+ksvm2Pred <- round(ksvm2Pred)
+ksvm2Model <- data.table(testData2, ksvm2Pred)
+colnames(ksvm2Model)[7] <- "ksvm2Predicted.Ozone"
+head(ksvm2Model)
+
+## Step 5.2 - Test the model and find the percent of `goodOzone`
+actual <- factor(ksvm2Model$Ozone)
+actual
+predicted <- factor(ksvm2Model$ksvm2Predicted.Ozone)
+predicted
+confusion_mat <- as.matrix(table(Actual = actual, Predicted = predicted))
+confusion_mat
+accuracy <- percent((14 + 29) / (14 + 29 + 3 + 5), accuracy = .01)
+accuracy
+
+## Step 5.3 - Plot the results 
+correct <- ifelse(actual == predicted, "correct", "incorrect")
+correct <- factor(correct)
+
+df2 <- data.frame(correct, testData2$Temp, testData2$Wind, actual, predicted)
+colnames(df2)[2:ncol(df2)] <- c("Temp", "Wind", "goodOzone", "Predicted")
+head(df2)
+
+ksvm2Plot <- ggplot(data = df2, aes(Temp, Wind)) + geom_point(aes(color = goodOzone, size = correct, shape = Predicted)) + labs(title = "KSVM")
+ksvm2Plot
+
+## Step 5.4 - Compute models and plot the results for `svm()` and `naiveBayes()` 
+### Step 5.4.1 - Compute model for `svm()`
+svm2 <- svm(Ozone~., trainData2)
+svm2
+svm2Pred <- predict(svm2, testData2)
+head(svm2Pred)
+svm2Pred <- round(svm2Pred)
+svm2Model <- data.table(testData2, svm2Pred)
+colnames(svm2Model)[7] <- "svm2Predicted.Ozone"
+head(svm2Model)
+
+actual2 <- factor(svm2Model$Ozone)
+predicted2 <- factor(svm2Model$svm2Predicted.Ozone)
+# Different method
+confusion_mat2 <- confusionMatrix(data = predicted2, reference = actual2)
+confusion_mat2
+accuracy1 <- percent(confusion_mat2$overall, .01)
+accuracy1
+
+df3 <- data.frame(correct, testData2$Temp, testData2$Wind, actual2, predicted2)
+colnames(df3)[2:ncol(df3)] <- c("Temp", "Wind", "goodOzone", "Predicted")
+head(df3)
+
+svm2Plot <- ggplot(df3, aes(Temp, Wind)) + geom_point(aes(color = goodOzone, size = correct, shape = Predicted)) + labs(title = "SVM") + scale_colour_manual(values = c("#999999", "#E69F00"))
+svm2Plot
+
+### Step 5.4.2 - Compute model for `naiveBayes()`
+nB <- naiveBayes(Ozone~., trainData2)
+nB
+nBPred <- predict(nB, testData2)
+head(nBPred)
+nBModel <- data.table(testData2, nBPred)
+colnames(nBModel)[7] <- "nBPredicted.Ozone"
+head(nBModel)
+
+actual3 <- factor(nBModel$Ozone)
+predicted3 <- factor(nBModel$nBPredicted.Ozone)
+# method #3
+accuracy2 <- percent(accuracy(actual3, predicted3), .01)
+accuracy2
+
+df4 <- data.frame(correct, testData2$Temp, testData2$Wind, actual3, predicted3)
+colnames(df4)[2:ncol(df4)] <- c("Temp", "Wind", "goodOzone", "Predicted")
+head(df4)
+
+nBPlot <- ggplot(df4, aes(Temp, Wind)) + geom_point(aes(color = goodOzone, size = correct, shape = Predicted)) + labs(title = "Naive Bayes") + scale_colour_manual(values = c("red", "green"))
+nBPlot
+
+## Step 5.5 - Print percent accuracy of all the three models, and plot all three model results together
+paste("KSVM, SVM, and NB accuracy: ", accuracy, "84.31%", accuracy2)
+
+grid.arrange(ksvm2Plot, svm2Plot, nBPlot, ncol = 3)
+
+# Step 6: Which are the best Models for this data? 
+To explain the selected model and why it was chosen, I need to tell you what I have learned.
+The RMSEs of KSVM (25.87754), SVM (25.94753), and LM (26.41561) are in a precision of around 26, and these models appear the same
+but similar since data points appear differently in terms of colors and sizes depending on the technique.
+SVM and KSVM share the same percentage of correct cases (84.31%) and plots, whereas NB has a lower value (74.51%),
+resulting in a slightly different graph than KSVM and SVM by using shapes.
+Going back to the question of which model is best, I believe that less error is best, so I would recommend the first KSVM model,
+and I also found that greater accuracy wasn't always better or didn't necessarily mean the model would perform better,
+so I believe that the NB model is the best.
+It was difficult for me to decide whether the KSVM or NB model is the best, but based on the legend, I'll choose the NB one.
