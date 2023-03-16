@@ -1,0 +1,171 @@
+*** Message: Step 2 - Not sure about codes because at least one question seems to be incorrect ***
+
+library(tidyverse)
+library(scales)
+library(arules)
+library(arulesViz)
+library(dplyr)
+
+# Step 0 - Load the data
+setwd("/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/week9_Lab/data")
+load("titanic.raw.rdata")
+t <- titanic.raw
+head(t)
+
+# Step 1 - Descriptive stats
+survivors <- t %>% filter(Survived == "Yes")
+survivors <- nrow(survivors) / nrow(t)
+survivors
+survivorsPercent <- percent(survivors, accuracy = 0.01)
+paste("Survived = Yes:", survivorsPercent)
+
+children <- t %>% filter(Age == "Child")
+children <- (nrow(children) / nrow(t))
+children
+childrenPercent <- percent(children, accuracy = 0.01)
+paste("Age = Child:", childrenPercent)
+
+female <- t %>% filter(Sex == "Female")
+female <- nrow(female) / nrow(t)
+female
+femalePercent <- percent(female, accuracy = 0.01)
+paste("Sex = Female:", femalePercent)
+
+classFirst <- t %>% filter(Class == "1st")
+classFirst <- nrow(classFirst) / nrow(t)
+classFirst
+classFirstPercent <- percent(classFirst, accuracy = 0.01)
+paste("Class = 1st:", classFirstPercent)
+
+# Calculate percentages differently
+t1 <- as(object = t, Class = "transactions")
+percent(itemFrequency(t1), .1)
+
+# Step 2 - More descriptive stats
+childSurvivors <- t %>% filter(Age == "Child" & Survived == "Yes")
+childSurvivors <- nrow(childSurvivors) / nrow(t)
+childSurvivors
+childSurvivorsPercent <- percent(childSurvivors, accuracy = 0.01)
+paste(childSurvivorsPercent, "of children survive")
+
+# Calculate percent differently
+t %>% group_by(Age) %>% summarise("Survival rate" = (sum(Survived == "Yes") / nrow(t) * 100))
+t %>% group_by(Age, Survived) %>% summarise(count = n()) %>% mutate("percent" = count / sum(count) * 100)
+
+femaleSurvivors <- t %>% filter(Sex == "Female" & Survived == "Yes")
+femaleSurvivors <- nrow(femaleSurvivors) / nrow(t)
+femaleSurvivors
+femaleSurvivorsPercent <- percent(femaleSurvivors, accuracy = 0.01)
+paste("Female survivors:", femaleSurvivorsPercent)
+
+t %>% group_by(Sex) %>% summarise("Survival rate" = (sum(Survived == "Yes") / nrow(t) * 100))
+t %>% group_by(Sex, Survived) %>% summarise(count = n()) %>% mutate("percent" = count / sum(count) * 100)
+
+classFirstSurvivors <- t %>% filter(Class == "1st" & Survived == "Yes")
+classFirstSurvivors <- nrow(classFirstSurvivors) / nrow(t)
+classFirstSurvivors
+classFirstSurvivorsPercent <- percent(classFirstSurvivors, accuracy = 0.01)
+paste(classFirstSurvivorsPercent, "of first-class survivors survived")
+
+classThirdSurvivors <- t %>% filter(Class == "3rd" & Survived == "Yes")
+classThirdSurvivors <- nrow(classThirdSurvivors) / nrow(t)
+classThirdSurvivors
+classThirdSurvivorsPercent <- percent(classThirdSurvivors, accuracy = 0.01)
+paste("The percentage of third class survivors is", classThirdSurvivorsPercent)
+
+t %>% group_by(Class) %>% summarise("Survival rate" = (sum(Survived == "Yes") / nrow(t) * 100))
+t %>% group_by(Class, Survived) %>% summarise(count = n()) %>% mutate("percent" = count / sum(count) * 100)
+
+# Step 3 - Writing a function
+## Step 3.1 - Function 1
+myfunction1 <- function(Class, Sex, Age, Survived){
+df1 <- t[t$Class == Class,] # filter the data that satisfied the criteria that "Class" = a
+df2 <- df1[df1$Sex == Sex,] # filter the data that satisfied the criteria that "Sex" = b
+df3 <- df2[df2$Age == Age,] # filter the data that satisfied the criteria that "Age" = c
+df4 <- df3[df3$Survived == Survived,] # filter the data that satisfied the criteria that "Survived" = d
+return(df4)}
+# test the function with a sample data
+myfunction1("1st", "Female", "Adult", "No")
+
+## Step 3.2 - Function 2
+myfunction2 <- function(Class, Sex, Age)
+{
+  SurvivedYes <- myfunction1(Class, Sex, Age, 'Yes')
+  SurvivedYesPercent <- percent(nrow(SurvivedYes) / nrow(t), accuracy = 0.01)
+  SurvivedYesPercent <- paste(SurvivedYesPercent, "of", Class, "class", Sex, Age, "survived")
+  SurvivedNo <- myfunction1(Class, Sex, Age, 'No')
+  SurvivedNoPercent <- percent(nrow(SurvivedNo) / nrow(t), accuracy = 0.01)
+  SurvivedNoPercent <- paste(SurvivedNoPercent, "of", Class, "class", Sex, Age, "died")
+  return(c(SurvivedYesPercent, SurvivedNoPercent))
+}
+
+## Step 3.3 - Use the function (male)
+myfunction2("3rd", "Male", "Adult")
+myfunction2("3rd", "Male", "Child")
+
+# A different approach
+filtered <- t %>% group_by(Class, Sex, Age) %>% summarise("Survival rate" = (sum(Survived == "Yes") / nrow(t) * 100), Mortality = (sum(Survived == "No") / nrow(t) * 100))
+filtered[c(-1:-10,-13:-nrow(filtered)),]
+
+People in which category are more likely to survive? 
+Third-class males who are adults are more likely to survive than those who are children
+
+## Step 3.4 - Use the function (female)
+myfunction2("1st", "Female", "Adult")
+myfunction2("1st", "Female", "Child")
+
+filtered[c(-3:-nrow(filtered)),]
+
+People in which category are more likely to survive? 
+Adult first-class females are more likely to survive than children
+
+# Step 4 - Use aRules
+ruleset <- apriori(t, parameter = list(support = .01, confidence = .05))
+summary(ruleset)
+a <- inspect(ruleset)
+plot(ruleset)
+
+# 3. Pick the three most interesting and useful rules. Explain these rules using natural language.
+# a
+rownames(a)[which(a$lift == max(a$lift),)]
+a[76,]
+# b
+rownames(a)[which(a$lift == min(a$lift),)]
+a[152,]
+# c
+b <- ruleset[quality(ruleset)$lift < .56]
+inspect(b)
+
+# Answers to the quiz
+# Q4
+c <- ruleset[quality(ruleset)$lift > 2]
+c <- inspect(c)
+c[order(c$lift),]
+head(c[order(c$confidence, decreasing = T),])
+# 5
+head(c[order(c$lift, decreasing = T),])
+# Q6
+f <- apriori(t, parameter = list(support = 0.005, confidence = 0.5), appearance = list(default = "lhs", rhs = ("Survived=Yes")))
+summary(f)
+inspect(f)
+g <- f[quality(f)$lift > 2]
+h <- inspect(g)
+i <- h[order(-h$lift),]
+head(i, 10)
+
+3. Pick the three most interesting and useful rules. Explain these rules using natural language.
+Think critically. What was possible using one method that was not possible using 
+the other method? **Answer this in the space provided below.**
+3a. Children in second class survive the Titanic fall more than other passengers.
+3b. Women crew members have some chance of surviving the fall.
+3c. Rules 13: first-class adult males have some chance of surviving.
+
+4. How does this compare to the descriptive analysis we did on the same data set? 
+4. Frankly, I don't know.
+However, aRules is simpler to use, as it only requires a few lines of code to predict trends and patterns and is easier to understand,
+while descriptive statistics analysis requires more coding but is easier to comprehend.
+Association rules have what descriptive statistics analysis lacks: they measure support and confidence.
+However, even with their differing methods of calculating probability and percentage,
+they produce similar results when analyzing relationships between observations.
+I prefer descriptive statistics analysis over aRules if you ask me which method I prefer.
+For every project, I will use descriptive statistics analysis, except if it relates to medicine, health, or transactions, in which case I may use an aRules.
