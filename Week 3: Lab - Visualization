@@ -1,0 +1,19 @@
+library(ggplot2)
+
+# Step 1 - Histogram
+head(mtcars)
+ggplot(mtcars, aes(mpg)) + geom_histogram()
+
+# Step 2 - Boxplots
+ggplot(mtcars, aes(x = as.factor(cyl), mpg)) + geom_boxplot()
+
+# Step 3 - MultiLine chart
+ggplot(mtcars, aes(x = wt, y = mpg, color = factor(am))) + geom_line() + geom_point()
+
+# Step 4 - Barchart
+car_Brand <- row.names(mtcars)
+car_Brand
+ggplot(mtcars, aes(car_Brand, wt)) + geom_col() + coord_flip()
+
+# Step 5 - Scatter chart
+ggplot(mtcars, aes(mpg, wt)) + geom_point(aes(color = qsec, size = qsec))
