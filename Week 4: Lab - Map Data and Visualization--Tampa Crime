@@ -1,0 +1,38 @@
+library(ggplot2)
+library(ggmap)
+
+# Step 1 - A map with “points” for each of the crimes
+# Step 1.1 - Read the data
+setwd("/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/Week4_Lab/data")
+df <- read.csv("Police_calls_for_service.csv")
+str(df)
+
+# Step 1.2 - Get your Google API Key
+register_google(key <- "***")
+
+# Step 1.3 - Get Latitudes and Longitudes
+df$Address_complete <- paste(df$Address, ", Tampa, FL")
+latlong <- geocode(df$Address_complete)
+latlong
+
+## Step 1.4 - Create simpleMap object
+#get latitude and longitude for USF
+tampa <- geocode("usf, tampa, fl")
+tampa
+
+#obtain maps from multiple sources and zoom into the region around Tampa university
+tampa.map <- get_map(location = tampa, zoom = 11)
+
+#generate map and store it in "simpleMap"
+simpleMap <- ggmap(tampa.map)
+
+#plot the map
+simpleMap
+
+# Step 1.5 - Create Tampa_crimemape
+Tampa_crimemap <- simpleMap + geom_point(data = latlong, aes(x = lon, y = lat, color = df$Description), size = .25)
+Tampa_crimemap
+
+# Step 2 - A “density map” showing the same information.
+Tampa_crimemap_density <- simpleMap + geom_density2d(data = latlong, aes(x = lon, y = lat))
+Tampa_crimemap_density
