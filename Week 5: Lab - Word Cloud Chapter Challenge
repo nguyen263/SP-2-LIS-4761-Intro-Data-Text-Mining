@@ -1,0 +1,52 @@
+library(wordcloud)
+library(tm)
+library(stopwords)
+library(wordcloud2)
+
+# Step 1. Load and Clean the Data
+setwd("/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/week5_Lab/data")
+data <- read.csv("sample.csv")
+text <- data$text
+str(text)
+# text now contain 366 texts
+texts.vec <- VectorSource(text)
+texts.corpus <- Corpus(texts.vec)
+texts.corpus
+# The text now has 366 texts, as before
+texts.corpus <- tm_map(texts.corpus, content_transformer(tolower))
+texts.corpus <- tm_map(texts.corpus, removePunctuation)
+texts.corpus <- tm_map(texts.corpus, removeNumbers)
+stops <- stopwords("en")
+texts.corpus <- tm_map(texts.corpus, removeWords, stops)
+
+# Step 2. Adjust the Stopwords
+text
+texts.corpus <- tm_map(texts.corpus, removeWords, c("can", "just", "virginamerica", "flight"))
+#My choice of "virginamerica" and "flight" was based on the fact that "virginamerica" is often used to get attention and that it is saved as a value in the "airline" column, which is a common word found in every text. Since that company is associated with the word "flight," I know "flight" is mostly mentioned in some texts.
+tdm <- TermDocumentMatrix(texts.corpus)
+inspect(tdm)
+f <- as.matrix(tdm)
+textCounts <- rowSums(f)
+textCounts <- sort(textCounts, decreasing = T)
+head(textCounts)
+cloudFrame <- data.frame(word = names(textCounts), freq = textCounts)
+cloudFrame
+wordcloud(cloudFrame$word, cloudFrame$freq, max.words = 40)
+
+# Step 3. Adjust the Theme
+wordcloud(names(textCounts), textCounts, colors = brewer.pal(5, "Accent"), max.words = 40)
+word <- aggregate(freq~word, data = cloudFrame, FUN = sum)
+wordcloud2(word, color = "random-dark")
+
+# Step 4. Analysis
+Honestly, the word cloud either conveys the key points of the document or doesn't.
+As you can see, some words, such as "help," appear more dominant than other terms, which indicates they carry a negative connotation that indicates what consumers think about Virgin America.
+It was my opinion, however, that despite this, it didn't adequately convey the main issues of the document because the word cloud included a lot of words, especially transitive and intransitive verbs, as well as modal verbs, such as "another", "guys", "need", etc., that were not relevant to the company.
+They care about what is relevant and what consumers think of the issue, whether it is bad or positive since this reflects their reputation.
+I'm not exactly sure what I can improve. However, perhaps I should remove transitive, intransitive, and modal verbs from the document and generate words to determine whether they are neutral, negative, or positive.
+For example, in raw data, positive words are "great", "time", "thank", "free", "cheap", "new", "like", etc.
+The negative words are "missed", "change", "delay", etc., while the neutral words are "trying"; these are the words the company is looking for, so this word cloud should encompass all words that have a connotation and are mentioned most often.
+The same applies to wordcloud2; I think this graph effectively conveys the key points through the use of emojis since emojis reflect consumer moods. As an example, I see 😠; this might be attributed to the fact that consumers associate "customer service" and "delay" with anger.
+Using wordcloud2 allows us to analyze the emphasis of each of the different emojis a company might have and find patterns in those emojis to represent a more realistic sentiment than just using words.
+A helpful way to gain insight into the likes and dislikes of customers that extends beyond word frequency is to use connotative words and emojis.
+As for improving the meaning of the word cloud, I didn't try these suggestions.
