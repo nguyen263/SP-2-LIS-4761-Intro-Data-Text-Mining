@@ -1,0 +1,65 @@
+library(ggplot2)
+library(readxl)
+
+# Step 1 - Define "Model"
+To simplify the definition of the model, it is a mathematical equation of inputs that contain numeric values to affect a target value and describe the relationship between independent and dependent variables, aka linear model and regression model, to assist data scientists and analysts in presenting their findings, especially patterns and forecasts.
+
+# Step 2 - Review the data 
+
+# Step 3 - Read in the data
+df <- as.data.frame(read_xls("/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/week8_Lab/data/mlr01.xls"))
+colnames(df) <- c("fawnNo", "adultPop", "annual_precipitation", "winter_severity_index")
+head(df)
+
+# Step 4 - Inspect the data
+str(df)
+
+# Step 5 - Create bivariate plots
+## Step 5.1 - Fawn Count by Adult Population
+ggplot(df, aes(adultPop, fawnNo)) + geom_point() +
+labs(title = "Number of Fawns vs. Adult Antelopes", y = "Count of Fawns", x = "Adult Antelope Population") +
+theme(plot.title = element_text(hjust = 0.5)) + geom_smooth(method = "lm")
+
+## Step 5.2 - Fawn Count by Annual Precipitation
+ggplot(df, aes(annual_precipitation, fawnNo)) + geom_point() +
+labs(title = "Fawn Count by Annual Precipitation", y = "Count of Fawns", x = "Annual Precipitation") +
+theme(plot.title = element_text(hjust = 0.5)) + geom_smooth(method = "lm")
+
+## Step 5.3 - Fawn Count by Winter Severity Index
+ggplot(df, aes(winter_severity_index, fawnNo)) + geom_point() +
+labs(title = "Fawn Count by Winter Severity Index", y = "Count of Fawns", x = "Winter Severity Index") +
+geom_smooth(method = "lm") + theme(plot.title = element_text(hjust = 0.5))
+
+# Draw a scatterplot
+ggplot(df, aes(y = fawnNo, x = adultPop)) + geom_point(aes(color = annual_precipitation, size = winter_severity_index)) +
+labs(y = "Count of Fawns", x = "Adult Antelope Population", title = "Count of Fawns by Adult Antelope Population",
+subtitle = "Colors represent Annual Precipitation; Sizes indicate Winter Severity Index") + geom_smooth(method = "lm") +
+theme(plot.title = element_text(hjust = 0.5))
+
+# Question: which variable is the most highly correlated with Fawn Count?
+# Winter severity index has the highest correlation with the fawn count.
+The reason I chose this variable is that their relationship is negative, so I hope this acknowledgment will improve the relationship's development.
+
+# Step 6 - Create regression models 
+## Step 6.1 - Predict Fawn Count using one input variable
+summary(lm(data = df, fawnNo ~ winter_severity_index))
+
+## Step 6.2 - Predict Fawn Count using two input variable
+summary(lm(data = df, fawnNo ~ winter_severity_index + annual_precipitation))
+
+## Step 6.3 - Predict Fawn Count using three input variables
+summary(lm(data = df, fawnNo ~ winter_severity_index + annual_precipitation + adultPop))
+
+## Step 6.4 - Analysis
+Which regression model works best?
+Model three is obviously the best choice as I can see all variables that influence the number of fawns.
+Not only that, but all values of the predictors are lower than the p-value and have a significant effect on the dependent variable
+compared to model 2 since the values are higher than the r-squared.
+Which of the predictors are statistically significant in each model?
+It is obvious that the winter severity index is the only predictor that is statistically significant (0.036263) in model 1;
+annual precipitation is statistically significant (0.00843), while the winter severity index is 0.18842 in model 2.
+Among the three predictors in model 3, annual precipitation has a statistically significant value of 0.0217, while the winter severity index was 0.0366
+and the population of adult antelope was 0.0273.
+If you wanted to create the most parsimonious model (i.e., the one that did the best job with the fewest predictors), what would it contain?
+The number of fawns can be predicted using the winter severity index and the population of adult antelope or
+by annual precipitation and the population of adult antelope.
