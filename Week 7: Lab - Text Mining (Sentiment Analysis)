@@ -1,0 +1,245 @@
+*** Message: The last section is incorrect ***
+*** To the owner: Please find attached the corrected code that I saved on my laptop ***
+
+library(XML)
+library(tm)
+library(ggplot2)
+
+# Step 1 - Read in the Bing Dictionary
+## Step 1.1 - Find the files
+
+## Step 1.2 - Create vectors
+pos <- "/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/week7_Lab/data/positive-words.txt"
+neg <- "/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/week7_Lab/data/negative-words.txt"
+
+## Step 1.3 - Clean the files
+p <- scan(pos, character(0), sep = "\n")
+n <- scan(neg, character(0), sep = "\n")
+head(p, 40)
+p <- p[-1:-29]
+head(n, 40)
+n <- n[-1:-30]
+head(p, 3)
+head(n, 3)
+
+# Step 2: Process in the MLK speech
+## Step 2.1 - Find and read in the file.
+doc.html = htmlTreeParse('http://www.analytictech.com/mb021/mlk.htm', useInternal = T)
+doc <- doc.html
+# Extract all the paragraphs (HTML tag is p, starting at the root of the document). Unlist flattens the list to create a character vector.
+text <- unlist(xpathApply(doc, '//p', xmlValue))
+head(text, 3)
+
+## Step 2.2 - Parse the files
+# Replace all \n by spaces
+text <- gsub('\\n', ' ', text)
+# Replace all \r by spaces
+text <- gsub('\\r', ' ', text)
+head(text, 3)
+
+## Step 2.3 - Transform the text
+words.corpus <- Corpus(VectorSource(text))
+words.corpus
+words.corpus <- tm_map(words.corpus, content_transformer(tolower))
+words.corpus <- tm_map(words.corpus, removePunctuation)
+words.corpus <- tm_map(words.corpus, removeNumbers)
+words.corpus <- tm_map(words.corpus, removeWords, stopwords("en"))
+tdm <- TermDocumentMatrix(words.corpus)
+tdm
+
+## Step 2.4 - Create a list of word frequencies
+t <- as.matrix(tdm)
+wordCounts <- rowSums(t)
+wordCounts <- sort(wordCounts, decreasing = T)
+head(wordCounts)
+length(wordCounts)
+
+# Step 3: Positive words
+totalWords <- sum(wordCounts)
+totalWords
+words <- names(wordCounts)
+head(words, 3)
+
+matched <- match(words, p, nomatch = 0)
+head(matched, 3)
+pCounts <- wordCounts[which(matched != 0)]
+length(pCounts)
+pWords <- names(pCounts)
+head(pWords, 3)
+Pos <- sum(pCounts)
+Pos
+
+totalWords <- length(words)
+totalWords
+ratioPos <- Pos / totalWords
+ratioPos
+
+# Step 4: Negative words
+matched <- match(words, n, nomatch = 0)
+nCounts <- wordCounts[which(matched != 0)]
+Neg <- sum(nCounts)
+nWords <- names(nCounts)
+Neg
+length(nCounts)
+
+ratioNeg <- Neg / totalWords
+ratioNeg
+
+# Step 5: Get Quartile values
+## 5.1 Compare the results in a graph
+# define a cutpoint to split the document into 4 parts; round the number to get an integer
+cutpoint <- round(length(words.corpus) / 4)
+ 
+# first 25%
+# create word corpus for the first quarter using cutpoints
+words.corpus1 <- words.corpus[1:cutpoint]
+# create term document matrix for the first quarter
+tdm1 <- TermDocumentMatrix(words.corpus1)
+# convert tdm1 into a matrix called "t1"
+t1 <- as.matrix(tdm1)
+# create a list of word counts for the first quarter and sort the list
+wordCounts1 <- rowSums(t1)
+wordCounts1 <- sort(wordCounts1, decreasing = T)
+# calculate total words of the first 25%
+totalWords1 <- sum(wordCounts1)
+words1 <- names(wordCounts1)
+
+matched1 <- match(words1, p, nomatch = 0)
+pCounts1 <- wordCounts1[which(matched1 != 0)]
+length(pCounts1)
+pWords1 <- names(pCounts1)
+Pos1 <- sum(pCounts1)
+Pos1
+
+matched1 <- match(words1, n, nomatch = 0)
+nCounts1 <- wordCounts1[which(matched1 != 0)]
+Neg1 <- sum(nCounts1)
+nWords1 <- names(nCounts1)
+Neg1
+length(nCounts1)
+
+totalWords1 <- length(words1)
+ratioPos1 <- Pos1 / totalWords1
+ratioPos1
+ratioNeg1 <- Neg1 / totalWords1
+ratioNeg1
+
+# 2nd 25%
+# create word corpus for the 2nd quarter using cutpoints
+words.corpus2 <- words.corpus[cutpoint + 1:cutpoint * 2]
+# create term document matrix for the 2nd quarter
+tdm2 <- TermDocumentMatrix(words.corpus2)
+# convert tdm2 into a matrix called "t2"
+t2 <- as.matrix(tdm2)
+# create a list of word counts for the 2nd quarter and sort the list
+wordCounts2 <- rowSums(t2)
+wordCounts2 <- sort(wordCounts2, decreasing = T)
+# calculate total words of the 2nd 25%
+totalWords2 <- sum(wordCounts2)
+words2 <- names(wordCounts2)
+
+matched2 <- match(words2, p, nomatch = 0)
+pCounts2 <- wordCounts2[which(matched2 != 0)]
+length(pCounts2)
+pWords2 <- names(pCounts2)
+Pos2 <- sum(pCounts2)
+Pos2
+
+matched2 <- match(words2, n, nomatch = 0)
+nCounts2 <- wordCounts2[which(matched2 != 0)]
+Neg2 <- sum(nCounts2)
+nWords2 <- names(nCounts2)
+Neg2
+length(nCounts2)
+
+totalWords2 <- length(words2)
+ratioPos2 <- Pos2 / totalWords2
+ratioPos2
+ratioNeg2 <- Neg2 / totalWords2
+ratioNeg2
+
+# 3rd 25%
+# create word corpus for the third quarter using cutpoints
+words.corpus3 <- words.corpus[cutpoint * 2 + 1:cutpoint * 3]
+# create term document matrix for the third quarter
+tdm3 <- TermDocumentMatrix(words.corpus3)
+# convert tdm3 into a matrix called "t3"
+t3 <- as.matrix(tdm3)
+# create a list of word counts for the third quarter and sort the list
+wordCounts3 <- rowSums(t3)
+wordCounts3 <- sort(wordCounts3, decreasing = T)
+# calculate total words of the third 25%
+totalWords3 <- sum(wordCounts3)
+words3 <- names(wordCounts3)
+
+matched3 <- match(words3, p, nomatch = 0)
+pCounts3 <- wordCounts3[which(matched3 != 0)]
+length(pCounts3)
+pWords3 <- names(pCounts3)
+Pos3 <- sum(pCounts3)
+Pos3
+
+matched3 <- match(words3, n, nomatch = 0)
+nCounts3 <- wordCounts3[which(matched3 != 0)]
+Neg3 <- sum(nCounts3)
+nWords3 <- names(nCounts3)
+Neg3
+length(nCounts3)
+
+totalWords3 <- length(words3)
+ratioPos3 <- Pos3 / totalWords3
+ratioPos3
+ratioNeg3 <- Neg3 / totalWords3
+ratioNeg3
+
+# 4th 25%
+# create word corpus for the last quarter using cutpoints
+words.corpus4 <- words.corpus[cutpoint * 3 + 1:cutpoint * 4]
+# create term document matrix for the last quarter
+tdm4 <- TermDocumentMatrix(words.corpus4)
+# convert tdm4 into a matrix called "t4"
+t4 <- as.matrix(tdm4)
+# create a list of word counts for the last quarter and sort the list
+wordCounts4 <- rowSums(t4)
+wordCounts4 <- sort(wordCounts4, decreasing = T)
+# calculate total words of the last 25%
+totalWords4 <- sum(wordCounts4)
+words4 <- names(wordCounts4)
+
+matched4 <- match(words4, p, nomatch = 0)
+pCounts4 <- wordCounts4[which(matched4 != 0)]
+length(pCounts4)
+pWords4 <- names(pCounts4)
+Pos4 <- sum(pCounts4)
+Pos4
+
+matched4 <- match(words4, n, nomatch = 0)
+nCounts4 <- wordCounts4[which(matched4 != 0)]
+Neg4 <- sum(nCounts4)
+nWords4 <- names(nCounts4)
+Neg4
+length(nCounts4)
+
+totalWords4 <- length(words4)
+ratioPos4 <- Pos4 / totalWords4
+ratioPos4
+ratioNeg4 <- Neg4 / totalWords4
+ratioNeg4
+
+negList <- c(ratioNeg1, ratioNeg2, ratioNeg3, ratioNeg4)
+posList <- c(ratioPos1, ratioPos2, ratioPos3, ratioPos4)
+
+data <- data.frame(negList, posList)
+
+labels <- c("1st 25%", "2nd 25%", "3rd 25%", "4th 25%")
+
+ggplot(data, aes(labels, negList)) + geom_col() + labs(title = "Negative Ratio", x = NULL, y = NULL) + theme(plot.title = element_text(hjust = 0.5))
+ggplot(data, aes(labels, posList)) + geom_col() + labs(title = "Positive Ratio", x = NULL, y = NULL) + theme(plot.title = element_text(hjust = 0.5))
+
+# 5.2 Analysis
+The MLK speech contains a significant amount of negative words, but they decrease throughout the speech, and in the fourth 25%, no negative terms appear, suggesting the rest of the speech is positive.
+The positive ratio clearly shows that MLK's speech begins with a good amount of positive words.
+However, during the second segment, the number of positive phrases decreases but then increases at the end.
+There are more positive expressions in the last 25% of the speech than in the first 25%.
+Comparing each segment, I can conclude that the negative sentiments outweigh the positives in the first and second segments, and the positives outweigh the negatives in the last two and last parts.
+From my understanding of and sentiment analysis of this MLK speech, I believe that the speech starts with the issue and convinces the audience by using negative word choices and then positive word choices that show hope that encircling the topic will inspire and motivate people to overcome it.
