@@ -1,0 +1,87 @@
+library(readxl)
+library(tidyverse)
+
+# Step 1 - Load the Data
+# Step 1.1 - Read the data
+setwd("/Users/loannguyen/Documents/R files/LIS 4761 - Intro Data:Text Mining/Week4_HW_zip")
+mydata <- read_excel("MedianZIP.xlsx")
+mydata
+
+# Step 1.2 - Clean the data
+colnames(mydata) <- c("zip", "median", "mean", "population")
+str(mydata)
+
+# Step 1.3 - Load library and data
+library(remotes)
+library(zipcode)
+data(zipcode)
+str(zipcode)
+
+# Step 1.4 - Merge the data
+mydata$zip <- clean.zipcodes(mydata$zip)
+head(mydata$zip)
+dfNew <- merge(mydata, zipcode, by = "zip")
+head(dfNew)
+
+# Step 1.5 - Clean the data again
+library(dplyr)
+dfNew <- dfNew %>% filter(state != "AK") %>% filter(state != "HI")
+str(dfNew)
+
+# Step 2 - Show the income and population per state
+# Step 2.1 - Create a simpler dataframe
+dfSimple <- dfNew %>% group_by(state) %>% summarise(meanIncome = mean(median), meanPop = mean(population))
+str(dfSimple)
+# DC should be removed since it is not a state
+dfSimple <- dfSimple[-7,]
+dfSimple
+
+# Step 2.2 - Update columns
+dfSimple$stateName <- state.name[match(dfSimple$state, state.abb)]
+dfSimple$stateName <- tolower(dfSimple$stateName)
+dfSimple$stateName
+
+# Step 2.3 - Visualize the US
+us <- map_data("state")
+map.simple <- ggplot(dfSimple, aes(map_id = stateName))
+map.simple <- map.simple + geom_map(map = us, aes(fill = meanIncome))
+map.simple <- map.simple + expand_limits(x = us$long, y = us$lat)
+map.simple <- map.simple + coord_map() + ggtitle("average median income of the U.S.")
+map.simple
+
+# Step 2.4 - Visualize the US
+map2 <- ggplot(dfSimple, aes(map_id = stateName))
+map2 <- map2 + geom_map(map = us, aes(fill = meanPop))
+map2 <- map2 + expand_limits(x = us$long, y = us$lat)
+map2 <- map2 + coord_map() + ggtitle("Population of the U.S.")
+map2
+
+# Step 3 - Show the income per zip code
+dfNew$stateName <- state.name[match(dfNew$state, state.abb)]
+dfNew$stateName <- tolower(dfNew$stateName)
+map.zip <- ggplot(dfNew, aes(map_id = stateName))
+map.zip <- map.zip + geom_map(map = us, color = "white",  fill = "black")
+map.zip <- map.zip + expand_limits(x = us$long, y = us$lat)
+map.zip <- map.zip + coord_map() + ggtitle("Income per zip code")
+map.zip <- map.zip + geom_point(data = dfNew, aes(x = longitude, y = latitude, color = median), size = 1)
+map.zip
+
+# Step 4 - Show zip code density
+mapD <- map.zip + stat_density2d(data = dfNew, aes(x = longitude, y = latitude))
+mapD
+
+# Step 5 - Zoom in to the region around Tampa
+library(ggmap)
+register_google(key <- "***")
+
+# use geocode function to get latitude and longitude of Tampa
+latlon <- geocode("Tampa, fl")
+
+# create the first zoomed map based on "mapZip", and plot a point representing Tampa
+mapZipZoomed <- map.zip + geom_point(aes(x = latlon$lon, y = latlon$lat), color = "darkred", size = 3)
+
+# zoom into the region around Tampa with 10 degrees latitude and longitude fluctuation (+/- 10)
+mapZipZoomed <- mapZipZoomed + xlim(latlon$lon - 10, latlon$lon + 10) + ylim(latlon$lat - 10, latlon$lat + 10) + coord_map()
+
+# plot the map
+mapZipZoomed
