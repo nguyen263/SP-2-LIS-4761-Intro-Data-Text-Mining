@@ -1,0 +1,49 @@
+library(ggplot2)
+library(reshape2)
+
+# Step 1 - Load the Data
+air <- data.frame(airquality)
+head(air)
+
+# Step 2 - Clean the Data
+colSums(air)
+air$Ozone[is.na(air$Ozone)] <- mean(air$Ozone, na.rm = T)
+air$Solar.R[is.na(air$Solar.R)] <- mean(air$Solar.R, na.rm = T)
+head(air)
+
+# Step 3 - Understand the data distribution
+ggplot(air, aes(Ozone)) + geom_histogram()
+ggplot(air, aes(Solar.R)) + geom_histogram()
+ggplot(air, aes(Wind)) + geom_histogram()
+ggplot(air, aes(Temp)) + geom_histogram()
+ggplot(air, aes(Month)) + geom_histogram()
+ggplot(air, aes(Day)) + geom_histogram()
+ggplot(air, aes(Ozone)) + geom_boxplot()
+ggplot(air, aes(as.factor(Ozone), Wind)) + geom_boxplot()
+ggplot(air, aes(as.factor(Wind), Ozone)) + geom_boxplot()
+
+# Step 4 - Explore how the data changes over time
+air$Date <- as.Date(paste("1973", air$Month, air$Day, sep = "/"))
+air$Wind <- air$Wind * 10
+head(air)
+ggplot(air, aes(Date, Ozone)) + geom_line()
+ggplot(air, aes(Date, Solar.R)) + geom_line()
+ggplot(air, aes(Date, Wind)) + geom_line()
+ggplot(air, aes(Date, Temp)) + geom_line()
+air2 <- data.frame(air$Ozone, air$Solar.R, air$Wind, air$Temp, air$Date)
+air2 <- air[,c("Ozone", "Solar.R", "Wind", "Temp", "Date")]
+head(air2)
+melted <- melt(air2, id = "Date")
+head(melted)
+ggplot(melted, aes(Date, value, color = variable)) + geom_line()
+
+# Step 5: Look at all the data via a heatmap
+ggplot(melted, aes(Date, variable)) + geom_tile(aes(fill = value)) + scale_fill_gradient(low = "white", high = "blue")
+
+# Step 6: Look at all the data via a scatter chart
+ggplot(air, aes(Wind, Temp)) + geom_point(aes(size = Ozone, color = Solar.R))
+
+# Step 7: Final analysis
+Honestly, I'm not sure what patterns to look for, but I think it's important to note that some variables are significantly influenced by each other based on the multiline chart, scatter chart, and heatmap.
+Based on the multiline chart, I noted that solar radiation has the highest value, and ozone is strongly correlated with solar radiation as both are high in May and still are high in October.
+It seems to me that the scatter chart indicates that low temperatures bring fast winds; the heatmap shows a strong correlation between ozone and temperature.
