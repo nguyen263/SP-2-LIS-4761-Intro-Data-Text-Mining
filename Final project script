@@ -1,4 +1,4 @@
-# Loan's part - create word clouds based on the review_title variable
+# create word clouds based on the review_title variable
 # Ensure that the correct working directory is selected
 getwd()
 # Load the necessary packages
@@ -51,7 +51,7 @@ word <- aggregate(freq~word, data = cloudFrame, FUN = sum)
 # Use the wordcloud2 package to create a word cloud
 wordcloud2(word, color = "random-light", size = 2.3, minRotation = -pi/6, maxRotation = -pi/6, rotateRatio = 1, fontFamily = "Officina Sans Bold", shape = "star", backgroundColor = "black")
 
-# Loan's part - create word clouds based on the review_content variable
+# create word clouds based on the review_content variable
 # assign a specific column of "data" to "reviews2"
 reviews2 <- data$review_content
 # Clean the data
@@ -93,7 +93,7 @@ par(mar = rep(0, 4))
 # Use the wordcloud2 package to create a word cloud
 wordcloud2(word2, color = "random-light", size = 1, minRotation = -pi/6, maxRotation = -pi/6, rotateRatio = 1, fontFamily = "Officina Sans Bold", shape = "star", backgroundColor = "black")
 
-# Loan's part - create a word cloud with Shiny
+# create a word cloud with Shiny
 # Load the necessary packages
 library(shiny)
 # Create a user interface
