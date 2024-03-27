@@ -28,11 +28,17 @@ simpleMap <- ggmap(tampa.map)
 
 #plot the map
 simpleMap
+#screenshot link
+blob:https://wordpress.com/9a62f08e-8bac-44d5-b0fe-55660031f996
 
 # Step 1.5 - Create Tampa_crimemape
 Tampa_crimemap <- simpleMap + geom_point(data = latlong, aes(x = lon, y = lat, color = df$Description), size = .25)
 Tampa_crimemap
+#screenshot link
+https://loann8653.files.wordpress.com/2024/03/tampa_crimemape.jpg
 
 # Step 2 - A “density map” showing the same information.
 Tampa_crimemap_density <- simpleMap + geom_density2d(data = latlong, aes(x = lon, y = lat))
 Tampa_crimemap_density
+#screenshot link
+https://loann8653.files.wordpress.com/2024/03/screenshot-2024-03-27-at-5.09.50-pm.png
