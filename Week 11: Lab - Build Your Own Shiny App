@@ -95,3 +95,5 @@ readCensus <- function() {
 
 # Step 3 - Create the Shiny App
 shinyApp(ui = ui, server = server)
+#screenshot link; sorry, my free plan does not support video uploads!
+https://loann8653.files.wordpress.com/2024/03/screenshot-2023-03-08-at-8.13.09-am.png
